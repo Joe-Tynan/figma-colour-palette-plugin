@@ -1,0 +1,386 @@
+<main class="container">
+  <div id="form-container">
+    <h1>Pixelkicks Palette Generator</h1>
+
+    <div id="colour-1-form" class="form">
+      <input id="mainColour" class="colour-selector" type="color" value="#000000">
+      <input id="mainColourName" class="colour-name" type="text" value="ColourName">
+      <p class="hex-value">#000000</p>
+      <button class="button show-hide" id="toggleRectangles">Show/Hide</button>
+    </div>
+  </div>
+
+  <div class="buttons">
+    <button class="button" id="add-new-colour">Add New Colour</button>
+    <button class="button" id="save">Save Variables</button>
+  </div>
+</main>
+
+<aside id="colour-1-scale" class="rectangle-scale">
+  <div class="rectangle"></div>
+  <div class="rectangle"></div>
+  <div class="rectangle"></div>
+  <div class="rectangle"></div>
+  <div class="rectangle"></div>
+  <div class="rectangle"></div>
+  <div class="rectangle"></div>
+  <div class="rectangle"></div>
+  <div class="rectangle"></div>
+</aside>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@100;200;300;400;500;600;700&display=swap');
+
+  html, body {
+    overflow: hidden;
+    margin: 0;
+    font-family: 'IMB Plex Sans', sans-serif;
+  }
+
+  body {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  main {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 24px;
+  }
+
+  .button {
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'IMB Plex Sans', sans-serif;
+    border: solid 1px #000000;
+    padding: 6px 10px;
+    border-radius: 4px;
+    background-color: transparent;
+  }
+
+  main h1 {
+    font-size: 16px;
+    font-family: 'IMB Plex Sans', sans-serif;
+    font-weight: 600;
+    margin-bottom: 32px;
+  }
+
+  main .form {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  main .form .colour-name {
+    font-size: 12px;
+    font-family: 'IMB Plex Sans', sans-serif;
+    font-weight: 700;
+    border: 0;
+    background-color: transparent;
+    max-width: 90px;
+  }
+
+  main .form .hex-value {
+    font-size: 10px;
+    font-family: 'IMB Plex Sans', sans-serif;
+    font-weight: 500;
+  }
+
+  .rectangle-scale {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    max-width: 120px;
+  }
+
+  .rectangle-scale .rectangle {
+    height: 100%;
+    width: 100%;
+  }
+
+  .buttons {
+    margin-top: 24px;
+  }
+
+  .mt-10 {
+    margin-top: 10px;
+  }
+
+  .show {
+    display: flex;
+  }
+</style>
+
+<script>
+  /* *** INITIAL CONFIG *** */
+  let colours = [];
+  let colourCount = 1;
+  let colourInputs = [];
+
+  showHideButtons();
+  changeColourNames();
+  changeColourScales();
+
+  /* *** PER COLOUR ACTIONS *** */
+  // On Colour Change
+  function changeColourScales() {
+    colourInputs = document.querySelectorAll('.colour-selector');
+  
+    for(let i = 0; i < colourInputs.length; i++) {
+      colourInputs[i].addEventListener('change', function(event) {
+        let colour = event.target;
+        let fullId = colour.parentNode.id;
+        let id = fullId.split('-')[1];
+
+        let colourScale = [];
+        const hexCode = colourInputs[i].value;
+
+        // Convert Hex to RGB
+        let r = 0, g = 0, b = 0;
+
+        // Example: #fff
+        if( hexCode.length == 4 ) {
+
+          r = "0x" + hexCode[1] + hexCode[1];
+          g = "0x" + hexCode[2] + hexCode[2];
+          b = "0x" + hexCode[3] + hexCode[3];
+
+        // Example: #ffffff
+        } else if( hexCode.length == 7 ) {
+
+          r = "0x" + hexCode[1] + hexCode[2];
+          g = "0x" + hexCode[3] + hexCode[4];
+          b = "0x" + hexCode[5] + hexCode[6];
+
+        }
+
+        // Convert RGB to HSL
+        r /= 255;
+        g /= 255;
+        b /= 255;
+
+        let cmin = Math.min(r, g, b);
+        let cmax = Math.max(r, g, b);
+        let delta = cmax - cmin;
+
+        let h = 0;
+        let s = 0;
+        let l = 0;
+
+        if( delta == 0 ) {
+          
+          h = 0;
+
+        } else if( cmax == r ) {
+
+          h = ((g - b) / delta) % 6;
+
+        } else if( cmax == g ) {
+
+          h = (b - r) / delta + 2;
+
+        } else {
+
+          h = (r - g) / delta + 4;
+
+        }
+
+        h = Math.round(h * 60);
+
+        if( h < 0 ) {
+          h += 360;
+        }
+
+        l = (cmax + cmin) / 2;
+        s = delta == 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
+
+        l = +(l * 100).toFixed(1);
+        s = +(s * 100).toFixed(1);
+
+        // Calculate Scale
+        let scale100 = "hsl(" + h + ", " + s + "%, " + (l + 40) + "%)"; // Lightest Colour
+        let scale200 = "hsl(" + h + ", " + s + "%, " + (l + 30) + "%)"; 
+        let scale300 = "hsl(" + h + ", " + s + "%, " + (l + 20) + "%)";  
+        let scale400 = "hsl(" + h + ", " + s + "%, " + (l + 10) + "%)";
+        let scale500 = "hsl(" + h + ", " + s + "%, " + l + "%)"; // Base Colour
+        let scale600 = "hsl(" + h + ", " + s + "%, " + (l - 10) + "%)";  
+        let scale700 = "hsl(" + h + ", " + s + "%, " + (l - 20) + "%)";  
+        let scale800 = "hsl(" + h + ", " + s + "%, " + (l - 30) + "%)";  
+        let scale900 = "hsl(" + h + ", " + s + "%, " + (l - 40) + "%)"; // Darkest Colour
+
+        colourScale.push(scale100);
+        colourScale.push(scale200);
+        colourScale.push(scale300);
+        colourScale.push(scale400);
+        colourScale.push(scale500);
+        colourScale.push(scale600);
+        colourScale.push(scale700);
+        colourScale.push(scale800);
+        colourScale.push(scale900);
+
+        // Set Colours up in UI Rectangles
+        const rectangleScale = document.querySelector(`#colour-${id}-scale`);
+        
+        for( let i = 0; i < rectangleScale.children.length; i++ ) {
+          let rectangle = rectangleScale.children[i];
+          rectangle.style.backgroundColor = colourScale[i];
+        }
+
+        rectangleScale.classList.add('show');
+
+        // Update Hex Value
+        event.target.parentNode.querySelector('.hex-value').textContent = hexCode;
+
+        // Create Colour Object
+        let colourObject = {
+          colourID: id,
+          scale: colourScale,
+        };
+
+        let exists = false;
+        for( i = 0; i < colours.length; i++ ) {
+          if( colours[i].colourID == id  ) {
+            exists = true;
+          }
+        }
+
+        // Push or Update
+        if( exists ) {
+          for( i = 0; i < colours.length; i++ ) {
+            if( colours[i].colourID == id  ) {
+              colours[i].scale = colourScale;
+            }
+          }
+        } else {
+          colours.push(colourObject);
+        }
+      });
+    }
+  }
+
+  // On Name Change
+  function changeColourNames() {
+    colourInputs = document.querySelectorAll('.colour-name');
+  
+    for(let i = 0; i < colourInputs.length; i++) {
+      colourInputs[i].addEventListener('change', function() {
+
+        let colour = event.target;
+
+        let fullId = colour.parentNode.id;
+        let id = fullId.split('-')[1];
+
+        let colourName = colour.parentNode.querySelector('.colour-name').value;
+
+        // Create Colour Object
+        let colourObject = {
+          colourID: id,
+          name: colourName,
+        };
+
+        let exists = false;
+        for( i = 0; i < colours.length; i++ ) {
+          if( colours[i].colourID == id  ) {
+            exists = true;
+          }
+        }
+
+        // Push or Update
+        if( exists ) {
+          for( i = 0; i < colours.length; i++ ) {
+            if( colours[i].colourID == id  ) {
+              colours[i].name = colourName;
+            }
+          }
+        } else {
+          colours.push(colourObject);
+        }
+      });
+    }
+  }
+
+  // On Show / Hide Button
+  function showHideButtons() {
+    let buttons = document.querySelectorAll('.show-hide');
+  
+    for(let i = 0; i < buttons.length; i++) {
+      buttons[i].addEventListener('click', function() {
+        let fullId = buttons[i].parentNode.id;
+        let id = fullId.split('-')[1];
+
+        // Show Correct Scale
+        let scale = document.querySelector(`#colour-${id}-scale`);
+        scale.classList.toggle('show');
+      });
+    }
+  }
+
+  /* *** ACTION BUTTONS *** */
+  // On Add New Colour
+  document.getElementById('add-new-colour').onclick = () => {
+    colourCount++;
+
+    // Create Form
+    let formContainer = document.getElementById('form-container');
+
+    const newForm = document.createElement('div');
+    newForm.id = `colour-${colourCount}-form`;
+    newForm.classList.add('form');
+    newForm.classList.add('mt-10');
+
+    const colourInput = document.createElement('input');
+    colourInput.id = `mainColour${colourCount}`;
+    colourInput.type = 'color';
+    colourInput.value = '#000000';
+    colourInput.classList.add('colour-selector');
+
+    const colourNameInput = document.createElement('input');
+    colourNameInput.id = `mainColourName${colourCount}`;
+    colourNameInput.type = 'text';
+    colourNameInput.value = `ColourName${colourCount}`;
+    colourNameInput.classList.add('colour-name');
+
+    const colourHexValue = document.createElement('p');
+    colourHexValue.classList.add('hex-value');
+    colourHexValue.textContent = '#000000';
+
+    const colourShowHideButton = document.createElement('button');
+    colourShowHideButton.id = 'toggleRectangles';
+    colourShowHideButton.classList.add('button', 'show-hide');
+    colourShowHideButton.textContent = 'Show/Hide';
+
+    newForm.appendChild(colourInput);
+    newForm.appendChild(colourNameInput);
+    newForm.appendChild(colourHexValue);
+    newForm.appendChild(colourShowHideButton);
+
+    formContainer.appendChild(newForm);
+
+    // Create Aside
+    const newScale = document.createElement('aside');
+    newScale.id = `colour-${colourCount}-scale`;
+    newScale.classList.add('rectangle-scale');
+
+    for( let i = 0; i < 9; i++ ) {
+      let rectangle = document.createElement('div');
+      rectangle.classList.add('rectangle');
+
+      newScale.appendChild(rectangle);
+    }
+
+    document.body.appendChild(newScale);
+
+    // Reset Functions to Account for New Colours
+    showHideButtons();
+    changeColourNames();
+    changeColourScales();
+  }
+  
+  // On Save
+  // TODO - Work with Multiple Colours
+  document.getElementById('save').onclick = () => {
+    parent.postMessage({ pluginMessage: {colours}}, '*');
+  }
+</script>
